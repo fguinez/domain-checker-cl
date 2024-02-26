@@ -6,7 +6,7 @@ use Text::CSV;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(store_array add_hash_to_csv);
+our @EXPORT_OK = qw(store_array file_to_array add_hash_to_csv read_csv);
 
 
 sub store_array {
@@ -18,6 +18,23 @@ sub store_array {
         print $fh "$line\n";
     }
     close $fh;
+}
+
+sub file_to_array {
+    my ($filename) = @_;
+
+    if (!-e $filename) {
+        return ();
+    }
+
+    open(my $fh, '<:encoding(UTF-8)', $filename) or die "Could not open file '$filename' $!";
+    my @array;
+    while (my $row = <$fh>) {
+        chomp $row;
+        push @array, $row;
+    }
+    close $fh;
+    return @array;
 }
 
 sub add_hash_to_csv {
@@ -43,4 +60,30 @@ sub add_hash_to_csv {
     $csv->print($fh, \@values);
 
     close $fh;
+}
+
+sub read_csv {
+    my ($filename) = @_;
+
+    if (!-e $filename) {
+        return ();
+    }
+
+    my @data;
+
+    open my $fh, '<:encoding(UTF-8)', $filename or die "Could not open file '$filename' $!";
+    binmode $fh, ":utf8"; # If you're dealing with Unicode characters
+    my $csv = Text::CSV->new({
+        binary => 1,
+        auto_diag => 1,
+        eol => "\n",
+        quote_char => undef,  # Disable quoting
+    }) or die "Cannot use CSV: " . Text::CSV->error_diag();
+    my $headers = $csv->getline($fh);
+    $csv->column_names(@$headers);
+    while (my $row = $csv->getline_hr($fh)) {
+        push @data, $row;
+    }
+    close $fh;
+    return @data;
 }
