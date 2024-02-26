@@ -32,6 +32,7 @@ sub scrape {
         d => $domain,
     );
     my $ua = LWP::UserAgent->new;
+    $ua->timeout(30);
     my $request = HTTP::Request->new(GET => $uri);
     $request->header('User-Agent' => 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:123.0) Gecko/20100101 Firefox/123.0');
     $request->header('Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8');
