@@ -7,6 +7,7 @@ use File::Path qw(remove_tree);
 use Utils::Combinations qw(generate_combinations);
 use Utils::Files qw(store_array file_to_array add_hash_to_csv read_csv);
 use Scraper;
+use Try::Tiny;
 
 
 
@@ -85,7 +86,20 @@ sub run {
     }
     restore_progress();
     for my $combination (@pending_combos) {
-        check_combination($combination);
+        my $tries = 3;
+        my $success = 0;
+        while ($tries > 0 && !$success) {
+            try {
+                check_combination($combination);
+                $success = 1;
+            } catch {
+                $tries--;
+                print "Failed: $_ ($tries remaining)\n";
+                my $random_seconds = 50 + int(rand(21));
+                print "Waiting $random_seconds seconds\n";
+                sleep $random_seconds;
+            };
+        }   
     }
     
 }
