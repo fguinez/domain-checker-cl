@@ -31,7 +31,8 @@ sub add_hash_to_csv {
     my $csv = Text::CSV->new({
         binary => 1,
         auto_diag => 1,
-        eol => "\n"
+        eol => "\n",
+        quote_char => undef,  # Disable quoting
     }) or die "Cannot use CSV: " . Text::CSV->error_diag();
     if (!$csv_exists){
         # Write header row
