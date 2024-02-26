@@ -2,9 +2,10 @@ use strict;
 use warnings;
 
 use lib '.';
+use File::Path qw(remove_tree);
 use Utils::Combinations qw(generate_combinations);
 use Utils::Files qw(store_array);
-use File::Path qw(remove_tree);
+use Scraper;
 
 
 our $PROGRESS_DIR = 'progress';
@@ -59,6 +60,11 @@ sub run() {
         restore_progress();
     }
     # TODO: Implement
+    my $scraper = Scraper->new();
+    my %response = $scraper->scrape('aaa.cl');
+    while (my ($key, $value) = each %response) {
+        print "$key: $value\n";
+    }
 }
 
 run();
