@@ -49,7 +49,7 @@ sub scrape {
         die "Failed: " . $response->status_line;
     }
     my $content = $response->decoded_content;
-    my $dom = Mojo::DOM->new($content);
+    my $dom = Mojo::DOM->new($content, charset => 'UTF-8');
     my %response = (
         domain => $domain,
         available => $dom->at('table.tablabusqueda td')->text eq $domain ? 0 : 1,
@@ -58,7 +58,13 @@ sub scrape {
     );
     if (!$response{available}) {
         my $owner = $dom->at("table.tablabusqueda tr:nth-child(2) td div:nth-child(2)")->text;
-        my $expiration = $dom->at("table.tablabusqueda tr:nth-child(6) td div:nth-child(2)")->text;
+        my $expiration_dom = $dom->at("table.tablabusqueda tr:nth-child(6) td div:nth-child(2)");
+        my $expiration;
+        if ($expiration_dom) {
+            $expiration = $expiration_dom->text;
+        } else {
+            $expiration = 'in deleting process';
+        }
         $owner =~ s/^\s+|\s+$//g;
         $expiration =~ s/^\s+|\s+$//g;
         $response{owner} = $owner;
