@@ -68,13 +68,12 @@ sub restore_progress {
 sub check_combination {
     my ($combination) = @_;
     my $domain = "$combination.cl";
+    print "Checking $domain\n";
     my %response = $scraper->scrape($domain);
-    while (my ($key, $value) = each %response) {
-        print "$key: $value\n";
-    }
     add_hash_to_csv("$PROGRESS_DIR/all.csv", %response);
     if ($response{'available'}) {
         add_hash_to_csv("$PROGRESS_DIR/available.csv", %response);
+        print "AVAILABLE: $domain\n";
     } else {
         add_hash_to_csv("$PROGRESS_DIR/unavailable.csv", %response);
     }

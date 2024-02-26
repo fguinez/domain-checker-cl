@@ -52,7 +52,7 @@ sub scrape {
     my $dom = Mojo::DOM->new($content);
     my %response = (
         domain => $domain,
-        available => $dom->at('#submitButton')->text eq "Inscribir \"$domain\""  ? 1 : 0,
+        available => $dom->at('table.tablabusqueda td')->text eq $domain ? 0 : 1,
         owner => "",
         expiration => "",
     );
