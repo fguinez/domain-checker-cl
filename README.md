@@ -9,4 +9,5 @@ Checks if the possible values of a regular expression are available Chilean doma
 
 ```bash
 cpan Mojolicious
+cpan Text::CSV
 ```

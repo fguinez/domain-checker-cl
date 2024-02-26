@@ -4,7 +4,7 @@ use warnings;
 use lib '.';
 use File::Path qw(remove_tree);
 use Utils::Combinations qw(generate_combinations);
-use Utils::Files qw(store_array);
+use Utils::Files qw(store_array add_hash_to_csv);
 use Scraper;
 
 
@@ -64,6 +64,12 @@ sub run() {
     my %response = $scraper->scrape('aaa.cl');
     while (my ($key, $value) = each %response) {
         print "$key: $value\n";
+    }
+    add_hash_to_csv("$PROGRESS_DIR/all.csv", %response);
+    if ($response{'available'}) {
+        add_hash_to_csv("$PROGRESS_DIR/available.csv", %response);
+    } else {
+        add_hash_to_csv("$PROGRESS_DIR/unavailable.csv", %response);
     }
 }
 
