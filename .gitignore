@@ -1,6 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/perl,linux,windows,macos,osx,visualstudiocode,vim,sublimetext
 # Edit at https://www.toptal.com/developers/gitignore?templates=perl,linux,windows,macos,osx,visualstudiocode,vim,sublimetext
 
+### Project files ###
+progress
+
 ### Linux ###
 *~
 
