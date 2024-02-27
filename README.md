@@ -8,7 +8,7 @@ Checks for available Chilean domains using [nic.cl](https://www.nic.cl) data.
 ## Dependencies
 
 ```bash
-cpan Mojolicious
 cpan Array::Utils
+cpan Mojolicious
 cpan Text::CSV
 ```
