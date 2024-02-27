@@ -5,23 +5,47 @@ use warnings;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(generate_combinations);
+our @EXPORT_OK = qw(generate_multiple_len_combos);
+
+our @chars = ('a'..'z', '0'..'9');
+
 
 sub generate_combinations {
-    my ($set, $combo_length, $current_combo, $all_combos) = @_;
+    my ($length) = @_;
 
-    # If the current combination is of the desired length, add it to the list of all combinations
-    if (scalar(@$current_combo) == $combo_length) {
-        push @$all_combos, [@$current_combo];
-        return;
-    }
+    # Internal recursive subroutine to handle variation generation
+    my $generate;
+    $generate = sub {
+        my ($prefix, $n) = @_;
+        return $prefix if $n == 0; # Base case: when length is reached
 
-    # Recursively generate combinations by adding each element of the set
-    for my $element (@$set) {
-        push @$current_combo, $element; # Add element to the current combination
-        generate_combinations($set, $combo_length, $current_combo, $all_combos); # Recursive call
-        pop @$current_combo; # Remove the last element to try the next possibility
+        my @results;
+        foreach my $char (@chars) {
+            push @results, $generate->($prefix . $char, $n - 1); # Recursive step
+        }
+        return @results;
+    };
+
+    return $generate->('', $length); # Start the recursive generation with an empty prefix
+}
+
+sub generate_multiple_len_combos {
+    my ($min_len, $max_len) = @_;
+    print "Generating combinations of length ($min_len,$max_len)\n";
+    my @combos;
+
+    my $combo_length = $min_len;
+    while ($combo_length <= $max_len) {
+        push @combos, generate_combinations($combo_length);
+        $combo_length++;
     }
+    printf(
+        "Combinations of length (%s,%s): %s\n",
+        $min_len,
+        $max_len,
+        scalar @combos
+    );
+    return @combos;
 }
 
 1;
