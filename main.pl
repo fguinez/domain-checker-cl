@@ -4,47 +4,66 @@ use strict;
 use warnings;
 
 use lib '.';
-use Array::Utils qw(array_diff);
+use Array::Utils qw(array_minus);
+use Digest::MD5 qw(md5_hex);
 use File::Path qw(remove_tree);
-use Utils::Combinations qw(generate_combinations);
-use Utils::Files qw(store_array file_to_array add_hash_to_csv read_csv);
+use Getopt::Long;
 use Scraper;
 use Try::Tiny;
+use Utils::Combinations qw(generate_multiple_len_combos);
+use Utils::Files qw(store_array file_to_array add_hash_to_csv read_csv);
 
-
-
+# Global variables
 our $PROGRESS_DIR = 'progress';
-
 our $scraper = Scraper->new();
 
-
-my @chars = ('a'..'z', '0'..'9');
-my $combo_length = 3;
-
-my @all_combos;
-my @checked_combos;
-my @pending_combos;
-
-sub init_process {
-    my $init_combo_length = $combo_length;
-    while ($combo_length > 0) {
-        generate_combinations(\@chars, $combo_length, [], \@all_combos);
-        $combo_length--;
+# Command line options
+my $filename;
+my $comb_min_len;
+my $comb_max_len;
+GetOptions(
+    'filename|f=s' => \$filename,
+    'comb_len|cl=s'  => \$comb_min_len,
+);
+my $usage = "Usage: perl main.pl filename.txt\n" .
+            "       perl main.pl --filename=filename.txt\n" .
+            "       perl main.pl -f filename.txt\n" .
+            "       perl main.pl --comb_len=3\n" .
+            "       perl main.pl -cl 3\n" .
+            "       perl main.pl -cl '2,4'\n" .
+            "\nParameters:\n" .
+            "   filename: file containing the list of options\n" .
+            "   comb_len: length of the combinations to generate. can be a " .
+            "single number or a range, always lower than 5 (e.g. '2,4' " .
+            "includes lengths 2, 3 and 4)\n\n" .
+            "This script does not support comb_len options combined with " .
+            "filename\n";
+# Handling the positional argument case
+$filename = defined $filename ? $filename : shift @ARGV;
+# If no options provided, and no ARGV, it's an error
+die $usage if !$filename && !$comb_min_len;
+# If both filename and comb_len options are provided, it's an error
+die $usage if $filename && $comb_min_len;
+# Additional condition to ensure no extra arguments are passed
+die $usage if @ARGV > 0;
+# Parsing the comb_len options
+if ($comb_min_len) {
+    if ($comb_min_len =~ /(\d+),(\d+)/) {
+        $comb_min_len = $1;
+        $comb_max_len = $2;
+    } else {
+        $comb_max_len = $comb_min_len;
     }
-
-    @all_combos = sort { scalar(@$a) <=> scalar(@$b) } @all_combos;
-
-    printf(
-        "Combinations of length %s or less: %s\n",
-        $init_combo_length,
-        scalar @all_combos
-    );
-
-    my $filename = "$PROGRESS_DIR/combinations.txt";
-
-    store_array($filename, \@all_combos);
-    print "Stored in $filename\n";
+    $comb_min_len = int($comb_min_len);
+    $comb_max_len = int($comb_max_len);
+    die $usage if $comb_min_len < 1 || $comb_max_len < 1 || $comb_min_len > $comb_max_len;
+    die $usage if $comb_max_len > 4;
 }
+
+my @checked;
+my @pending;
+
+my $dir;
 
 sub no_previous_progress {
     return !-d $PROGRESS_DIR;
@@ -57,15 +76,26 @@ sub set_up_progress_dir {
     init_process();
 }
 
+
 sub restore_progress {
     print "Restoring progress\n";
-    @all_combos = file_to_array("$PROGRESS_DIR/combinations.txt");
-    @checked_combos = read_csv("$PROGRESS_DIR/all.csv");
-    @checked_combos = map { substr($_->{'domain'}, 0, -3) } @checked_combos;
-    @pending_combos = array_diff(@all_combos, @checked_combos);
-    print "All: " . scalar @all_combos . "\n";
-    print "Checked: " . scalar @checked_combos . "\n";
-    print "Pending: " . scalar @pending_combos . "\n";
+    my @options;
+    if (defined $filename) {
+        @options = file_to_array($filename);
+    } else {
+        @options = generate_multiple_len_combos($comb_min_len, $comb_max_len);
+    };
+    my $checksum = md5_hex(@options);
+    $dir = "$PROGRESS_DIR/$checksum";
+    mkdir $dir;
+    store_array("$dir/options.txt", @options);
+    print "Progress available in $dir\n";
+    @checked = read_csv("$dir/chequed.csv");
+    @checked = map { substr($_->{'domain'}, 0, -3) } @checked;
+    @pending = array_minus(@options, @checked);
+    print "All options: " . scalar @options . "\n";
+    print "Checked: " . scalar @checked . "\n";
+    print "Pending: " . scalar @pending . "\n";
 }
 
 sub check_combination {
@@ -73,12 +103,15 @@ sub check_combination {
     my $domain = "$combination.cl";
     print "Checking $domain\n";
     my %response = $scraper->scrape($domain);
-    add_hash_to_csv("$PROGRESS_DIR/all.csv", %response);
+    add_hash_to_csv("$PROGRESS_DIR/chequed.csv", %response);
+    add_hash_to_csv("$dir/chequed.csv", %response);
     if ($response{'available'}) {
         add_hash_to_csv("$PROGRESS_DIR/available.csv", %response);
+        add_hash_to_csv("$dir/available.csv", %response);
         print "AVAILABLE: $domain\n";
     } else {
         add_hash_to_csv("$PROGRESS_DIR/unavailable.csv", %response);
+        add_hash_to_csv("$dir/unavailable.csv", %response);
     }
 }
 
@@ -87,7 +120,7 @@ sub run {
         set_up_progress_dir();
     }
     restore_progress();
-    for my $combination (@pending_combos) {
+    for my $combination (@pending) {
         my $tries = 3;
         my $success = 0;
         while ($tries > 0 && !$success) {
@@ -101,7 +134,7 @@ sub run {
                 print "Waiting $random_seconds seconds\n";
                 sleep $random_seconds;
             };
-        }   
+        };
     }
     
 }
