@@ -82,6 +82,12 @@ sub restore_progress {
     my @options;
     if (defined $filename) {
         @options = file_to_array($filename);
+        # quit accents
+        @options = map { s/á/a/g; s/é/e/g; s/í/i/g; s/ó/o/g; s/ú/u/g; $_ } @options;
+        # ñ -> n
+        @options = map { s/ñ/n/g; $_ } @options;
+        # quit non-alphanumeric characters
+        @options = map { s/[^a-zA-Z0-9]//g; $_ } @options;
     } else {
         @options = generate_multiple_len_combos($comb_min_len, $comb_max_len);
     };
