@@ -10,12 +10,11 @@ our @EXPORT_OK = qw(store_array file_to_array add_hash_to_csv read_csv);
 
 
 sub store_array {
-    my ($filename, $array) = @_;
+    my ($filename, @array) = @_;
 
-    open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    for my $element (@$array) {
-        my $line = join('', @$element);
-        print $fh "$line\n";
+    open(my $fh, '>:encoding(UTF-8)', $filename) or die "Could not open file '$filename' $!";
+    for my $element (@array) {
+        print $fh "$element\n";
     }
     close $fh;
 }
