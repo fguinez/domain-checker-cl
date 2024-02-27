@@ -60,6 +60,7 @@ if ($comb_min_len) {
     die $usage if $comb_max_len > 4;
 }
 
+my @options;
 my @checked;
 my @pending;
 
@@ -79,7 +80,6 @@ sub set_up_progress_dir {
 
 sub restore_progress {
     print "Restoring progress\n";
-    my @options;
     if (defined $filename) {
         @options = file_to_array($filename);
         # quit accents
@@ -142,6 +142,7 @@ sub run {
             };
         };
     }
+    print "Done. Results stored in $dir. " . scalar @options . " domains checked.\n";
     
 }
 
