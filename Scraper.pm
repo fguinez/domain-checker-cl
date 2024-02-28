@@ -19,6 +19,20 @@ sub new {
     return $self;
 }
 
+sub _find_in_table {
+    my ($self, $table_class, $row_text) = @_;
+    # find all the tr div elements in the table (names of the fields)
+    my @names = $self->{dom}->find("table$table_class tr td div:nth-child(1) b")->each;
+    my $row_name = (grep { $_->text eq $row_text } @names)[0];
+    if (! $row_name) {
+        return undef;
+    }
+    # get the next div (row value)
+    my $row_value = $row_name->parent->next->text;
+    $row_value =~ s/^\s+|\s+$//g;
+    return $row_value;
+}
+
 sub scrape {
     my ($self, $domain) = @_;
 
@@ -50,26 +64,24 @@ sub scrape {
         die "Failed: " . $response->status_line;
     }
     my $content = $response->decoded_content;
-    my $dom = Mojo::DOM->new($content, charset => 'UTF-8');
+    $self->{dom} = Mojo::DOM->new($content, charset => 'UTF-8');
     my %response = (
         domain => $domain,
-        available => $dom->at('table.tablabusqueda td')->text eq $domain ? 0 : 1,
+        available => $self->{dom}->at('table.tablabusqueda td')->text eq $domain ? 0 : 1,
         owner => "",
         expiration => "",
+        in_delete_process => 0,
     );
     if (!$response{available}) {
-        my $owner = $dom->at("table.tablabusqueda tr:nth-child(2) td div:nth-child(2)")->text;
-        my $expiration_dom = $dom->at("table.tablabusqueda tr:nth-child(6) td div:nth-child(2)");
-        my $expiration;
-        if ($expiration_dom) {
-            $expiration = $expiration_dom->text;
-        } else {
-            $expiration = 'in deleting process';
-        }
-        $owner =~ s/^\s+|\s+$//g;
-        $expiration =~ s/^\s+|\s+$//g;
+        my $weird_o = chr(243);
+        my $owner = $self->_find_in_table(".tablabusqueda", "Titular:");
+        my $expiration = $self->_find_in_table(".tablabusqueda", "Fecha de expiraci" . $weird_o . "n:");
         $response{owner} = $owner;
-        $response{expiration} = $expiration;
+        if ($expiration) {
+            $response{expiration} = $expiration;
+        } else {
+            $response{in_delete_process} = 1;
+        }
     }
     return %response;
 }
