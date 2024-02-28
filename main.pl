@@ -115,6 +115,10 @@ sub check_combination {
         add_hash_to_csv("$PROGRESS_DIR/available.csv", %response);
         add_hash_to_csv("$dir/available.csv", %response);
         print "AVAILABLE: $domain\n";
+    } elsif ($response{'in_delete_process'}) {
+        add_hash_to_csv("$PROGRESS_DIR/in_delete_process.csv", %response);
+        add_hash_to_csv("$dir/in_delete_process.csv", %response);
+        print "IN DELETE PROCESS: $domain\n";
     } else {
         add_hash_to_csv("$PROGRESS_DIR/unavailable.csv", %response);
         add_hash_to_csv("$dir/unavailable.csv", %response);
@@ -143,7 +147,6 @@ sub run {
         };
     }
     print "Done. Results stored in $dir. " . scalar @options . " domains checked.\n";
-    
 }
 
 run();
