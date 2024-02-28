@@ -69,8 +69,8 @@ sub scrape {
         domain => $domain,
         available => $self->{dom}->at('table.tablabusqueda td')->text eq $domain ? 0 : 1,
         owner => "",
-        #creation => "",
-        #modification => "",
+        creation => "",
+        modification => "",
         expiration => "",
         in_delete_process => 0,
     );
