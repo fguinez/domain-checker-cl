@@ -69,14 +69,21 @@ sub scrape {
         domain => $domain,
         available => $self->{dom}->at('table.tablabusqueda td')->text eq $domain ? 0 : 1,
         owner => "",
+        #creation => "",
+        #modification => "",
         expiration => "",
         in_delete_process => 0,
     );
     if (!$response{available}) {
         my $weird_o = chr(243);
+        my $ weird_u = chr(250);
         my $owner = $self->_find_in_table(".tablabusqueda", "Titular:");
+        my $creation = $self->_find_in_table(".tablabusqueda", "Fecha de creaci" . $weird_o . "n:");
+        my $modification = $self->_find_in_table(".tablabusqueda", "Fecha de " . $weird_u . "ltima modificaci" . $weird_o . "n:");
         my $expiration = $self->_find_in_table(".tablabusqueda", "Fecha de expiraci" . $weird_o . "n:");
         $response{owner} = $owner;
+        $response{creation} = $creation;
+        $response{modification} = $modification;
         if ($expiration) {
             $response{expiration} = $expiration;
         } else {
